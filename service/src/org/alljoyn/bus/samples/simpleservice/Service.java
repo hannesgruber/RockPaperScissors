@@ -54,7 +54,7 @@ public class Service extends Activity {
     private ListView mListView;
     private Menu menu;
     
-    private Handler mHandler = new Handler() {
+    private final Handler mHandler = new Handler() {
             @Override
             public void handleMessage(Message msg) {
                 switch (msg.what) {
@@ -131,7 +131,10 @@ public class Service extends Activity {
     /* The class that is our AllJoyn service.  It implements the SimpleInterface. */
     class SimpleService implements SimpleInterface, BusObject {
 
-        /*
+        private Object lastMove;
+		private Game game;
+
+		/*
          * This is the code run when the client makes a call to the Ping method of the
          * SimpleInterface.  This implementation just returns the received String to the caller.
          *
@@ -150,7 +153,45 @@ public class Service extends Activity {
         private void sendUiMessage(int what, Object obj) {
             mHandler.sendMessage(mHandler.obtainMessage(what, obj));
         }
+        
+        public String play(long id, int move) {
+        	
+        	if(game == null){
+        		game = new Game();
+        		game.playerOneID = id;
+        		game.playerOneMove = move;
+        		return "wait";
+        	} else if(id == game.playerOneID){
+        		
+        		if(game.playerOTwoID == 0){
+        			return "wait";
+        		} else {
+        			String result = game.playerOneMove > game.playerTwoMove ? "you won" :"you lost";
+        			game = null;
+        			return result;
+        		}
+        	} else {
+        		
+        		if(game.playerOTwoID == 0){
+        			game.playerOTwoID = id;
+        			game.playerTwoMove = move;
+        			String result = game.playerOneMove < move ? "you won" : "you lost";
+        			return result;
+        		} else{
+        			return "game in progress";
+        		}
+        		
+        	}
+        }
     }
+    
+    class Game{
+    	public long playerOneID;
+    	public long playerOTwoID;
+    	public int playerOneMove;
+    	public int playerTwoMove;
+    }
+    
 
     /* This class will handle all AllJoyn calls. See onCreate(). */
     class BusHandler extends Handler {
@@ -158,7 +199,7 @@ public class Service extends Activity {
          * Name used as the well-known name and the advertised name.  This name must be a unique name
          * both to the bus and to the network as a whole.  The name uses reverse URL style of naming.
          */
-        private static final String SERVICE_NAME = "org.alljoyn.bus.samples.simple";
+        private static final String SERVICE_NAME = "org.alljoyn.bus.samples.simpleRock";
         private static final short CONTACT_PORT=42;
         
         private BusAttachment mBus;

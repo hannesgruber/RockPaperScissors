@@ -40,4 +40,7 @@ public interface SimpleInterface {
      */
     @BusMethod
     String Ping(String inStr) throws BusException;
+    
+    @BusMethod
+    String play(long id, int move) throws BusException;
 }

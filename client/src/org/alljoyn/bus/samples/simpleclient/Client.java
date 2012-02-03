@@ -37,8 +37,11 @@ import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.inputmethod.EditorInfo;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -63,12 +66,14 @@ public class Client extends Activity {
     private ListView mListView;
     private Menu menu;
     
+    private final long id = System.currentTimeMillis();
+    
     /* Handler used to make calls to AllJoyn methods. See onCreate(). */
     private BusHandler mBusHandler;
     
     private ProgressDialog mDialog;
     
-    private Handler mHandler = new Handler() {
+    private final Handler mHandler = new Handler() {
             @Override
             public void handleMessage(Message msg) {
                 switch (msg.what) {
@@ -99,6 +104,7 @@ public class Client extends Activity {
                 }
             }
         };
+	private Button button;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -122,6 +128,18 @@ public class Client extends Activity {
                     return true;
                 }
             });
+        
+        button = (Button) findViewById(R.id.button);
+        button.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				/* Call the remote object's Ping method. */
+				
+                Message msg = mBusHandler.obtainMessage(BusHandler.PLAY, Integer.parseInt(mEditText.getText().toString()));
+                mBusHandler.sendMessage(msg);
+			}
+		});
 
         /* Make all AllJoyn calls through a separate handler thread to prevent blocking the UI. */
         HandlerThread busThread = new HandlerThread("BusHandler");
@@ -170,7 +188,7 @@ public class Client extends Activity {
          *
          * The name uses reverse URL style of naming, and matches the name used by the service.
          */
-        private static final String SERVICE_NAME = "org.alljoyn.bus.samples.simple";
+        private static final String SERVICE_NAME = "org.alljoyn.bus.samples.simpleRock";
         private static final short CONTACT_PORT=42;
 
         private BusAttachment mBus;
@@ -178,7 +196,7 @@ public class Client extends Activity {
         private SimpleInterface mSimpleInterface;
         
         private int 	mSessionId;
-        private boolean mIsInASession;
+        private final boolean mIsInASession;
         private boolean mIsConnected;
         private boolean mIsStoppingDiscovery;
         
@@ -187,6 +205,7 @@ public class Client extends Activity {
         public static final int JOIN_SESSION = 2;
         public static final int DISCONNECT = 3;
         public static final int PING = 4;
+        public static final int PLAY = 5;
 
         public BusHandler(Looper looper) {
             super(looper);
@@ -340,6 +359,17 @@ public class Client extends Activity {
                     logException("SimpleInterface.Ping()", ex);
                 }
                 break;
+            }
+            case PLAY: {
+            	try {
+            		if (mSimpleInterface != null) {
+            			String reply = mSimpleInterface.play(id, (Integer) msg.obj);
+            			sendUiMessage(MESSAGE_PING_REPLY, reply);
+            		}
+            	} catch (BusException ex) {
+            		logException("SimpleInterface.Ping()", ex);
+            	}
+            	break;
             }
             default:
                 break;
